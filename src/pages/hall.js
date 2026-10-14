@@ -10,6 +10,7 @@ import LogoFabrick from "../components/UI/LogoFabrick";
 import Navbar from "../components/UI/Navbar";
 import LoadingPage from "../components/UI/LoadingPage";
 import LoadingManager from "../components/LoadingManager";
+import AvisoErrores from "../components/AvisoErrores";
 import { precargarFabrick } from "../utils/textureLoader";
 import { FABRICK, abreCercana } from "../state/fabrick";
 
@@ -189,6 +190,7 @@ export default function Hall() {
         </Suspense>
       </Canvas>
 
+      <AvisoErrores />
       <LogoFabrick ancho={pequeno ? 150 : 230} />
       <Mira />
       <Instruccion>

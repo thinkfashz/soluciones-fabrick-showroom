@@ -95,3 +95,4 @@ sw.*
 # Desplegado en Vercel
 .vercel
 yarn.lock
+.env*

@@ -110,8 +110,12 @@ export function Puerta({ id, posicion, giro, ancho, material }) {
     registraPuerta(id, posicion[0], posicion[1], () => {
       estado.current.abierta = !estado.current.abierta;
     });
+    // Ojo: `posicion` es una literal nueva en cada render, así que si fuera dependencia el
+    // efecto se repetiría siempre y quitaPuertas() vaciaría el registro entero, dejando
+    // registrada solo la última puerta. Se dependen las coordenadas sueltas, que no cambian.
     return () => quitaPuertas();
-  }, [id, posicion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, posicion[0], posicion[2]]);
 
   useFrame((_, delta) => {
     if (!hoja.current) return;
