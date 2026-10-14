@@ -31,11 +31,11 @@ export default function AvisoErrores() {
       if (razon) pon("promesa rechazada: " + razon);
     };
 
-    addEventListener("error", onError);
-    addEventListener("unhandledrejection", onRechazo);
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRechazo);
     return () => {
-      removeEventListener("error", onError);
-      removeEventListener("unhandledrejection", onRechazo);
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRechazo);
     };
   }, []);
 
