@@ -17,6 +17,81 @@
     Para ver el showroom 3D necesitas tener activado JavaScript.
   </noscript>
   <div id="root"></div>
+
+  <!--
+    Diagnóstico. Va aquí, y no dentro de la app a propósito: index.html se ejecuta ANTES que
+    React, así que si algo revienta al cargar (o no hay WebGL), esto salta y lo dice. Si el
+    aviso viviera dentro de la app, un fallo previo impediría precisamente que se viera el
+    aviso. Al parado y sin WebGL, se quita solo y entra la app.
+  -->
+  <script>
+    (function () {
+      var fallos = [];
+      var VISTO = "sf-diag-v1";
+      try { sessionStorage.getItem(VISTO); } catch (e) {}
+
+      function caja(msg) {
+        fallos.push(msg);
+        var d = document.getElementById("sf-diag");
+        if (!d) {
+          d = document.createElement("div");
+          d.id = "sf-diag";
+          d.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:2147483647;" +
+            "max-height:60vh;overflow:auto;background:#1a0f0f;color:#ffb4b4;" +
+            "border-top:2px solid #ff5c5c;padding:12px 14px;" +
+            "font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap";
+          (document.body || document.documentElement).appendChild(d);
+        }
+        d.textContent = (d.textContent ? d.textContent + "\n\n" : "") + msg;
+      }
+
+      window.addEventListener("error", function (e) {
+        var msg = e.message || String(e.reason || "");
+        var donde = (e.filename || "").split("/").pop() + ":" + (e.lineno || 0);
+        caja("ERROR: " + msg + "\n  en " + donde);
+        if (e.error && e.error.stack) caja(e.error.stack);
+      }, true);
+
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e.reason;
+        caja("PROMESA RECHAZADA: " + (r && (r.stack || r.message) || r));
+      });
+
+      // WebGL: si no esta, la escena 3D no puede dibujarse y se veria blanco
+      function pruebaWebGL() {
+        try {
+          var c = document.createElement("canvas");
+          var gl = c.getContext("webgl2") || c.getContext("webgl") ||
+                   c.getContext("experimental-webgl");
+          if (!gl) return { ok: false, motivo: "el navegador no da contexto WebGL" };
+          return { ok: true, version: gl.getParameter(gl.VERSION) };
+        } catch (e) {
+          return { ok: false, motivo: e.message };
+        }
+      }
+
+      // si en 12 s no se ha montado la app, algo se ha quedado parado: se avisa
+      var t = setTimeout(function () {
+        var raiz = document.getElementById("root");
+        var vacio = !raiz || raiz.children.length === 0;
+        if (vacio) {
+          var w = pruebaWebGL();
+          caja("La app no ha montado en 12 s.\n" +
+               "WebGL: " + (w.ok ? "OK (" + w.version + ")" : "NO DISPONIBLE — " + w.motivo) +
+               "\nCargadores: " + (navigator.connection ? navigator.connection.effectiveType : "desconocido") +
+               "\nMemoria: " + (navigator.deviceMemory ? navigator.deviceMemory + " GB" : "desconocida"));
+        }
+      }, 12000);
+
+      // cuando la app monta de verdad, se retira el diagnóstico
+      window.__sfYaArranco = function () {
+        clearTimeout(t);
+        var d = document.getElementById("sf-diag");
+        if (d && !fallos.length) d.remove();
+        else if (d) d.style.borderTopColor = "#ffc400";
+      };
+    })();
+  </script>
 </body>
 
 </html>

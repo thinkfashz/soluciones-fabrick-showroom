@@ -13,6 +13,7 @@ import {
 } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import theme from "./utils/theme";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Logo from "./components/UI/Logo";
 
 const Room1 = React.lazy(() => import("./pages/room1"));
@@ -21,6 +22,7 @@ const Hall = React.lazy(() => import("./pages/hall"));
 function App() {
   return (
     <ThemeProvider theme={theme}>
+      <ErrorBoundary>
       <Router>
         <div
           style={{
@@ -43,6 +45,7 @@ function App() {
           </Suspense>
         </Switch>
       </Router>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
@@ -54,3 +57,6 @@ Sentry.init({
 
 const rootElement = document.getElementById("root");
 ReactDOM.render(<App />, rootElement);
+
+// avisa al diagnostico de index.html de que la app arranco
+setTimeout(function(){ if(window.__sfYaArranco) window.__sfYaArranco(); }, 1500);

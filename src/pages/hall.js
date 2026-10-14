@@ -15,7 +15,12 @@ import { precargarFabrick } from "../utils/textureLoader";
 import { FABRICK, abreCercana } from "../state/fabrick";
 
 /* Fabrica: la casa del plano, con geometría nuestra (1 unidad = 1 metro), recorrida en
-   primera persona. Sustituye al modelo glTF y al teletransporte de círculos. */
+   primera persona.
+   REGLA IMPORTANTE: dentro de <Canvas> solo pueden ir objetos de three.js. React Three Fiber
+   convierte cada elemento HTML en un objeto del espacio THREE, y si aparece uno salta:
+     "Button" is not part of the THREE namespace!
+   Por eso dentro va Contenido3D (que solo devuelve meshes) y todo el HTML —selector,
+   joystick, etiquetas— va fuera, en el nivel de React normal. */
 
 const Instruccion = styled.div`
   position: fixed; right: 20px; top: 16px; z-index: 26; max-width: 235px;
@@ -28,12 +33,6 @@ const Etiqueta = styled.div`
   color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0.14em;
   text-transform: uppercase; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
   pointer-events: none;
-`;
-const Entrar = styled.button`
-  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 27;
-  font: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0.05em;
-  padding: 18px 34px; cursor: pointer; border: none; border-radius: 10px;
-  background: #d4af37; color: #111; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
 `;
 const Panel = styled.aside`
   position: fixed; right: 16px; bottom: 16px; z-index: 26; width: 236px;
@@ -75,6 +74,57 @@ function nombreDe(id) {
   return e ? e.nombre : "";
 }
 
+/* --- esto va DENTRO del Canvas: solo objetos de three.js --- */
+
+/* Luces, cielo y suelo. Sin luz, los MeshStandardMaterial no se ven. */
+function Escena() {
+  return (
+    <>
+      <color attach="background" args={["#bcd4e6"]} />
+      <fog attach="fog" args={["#bcd4e6", 40, 160]} />
+      <ambientLight intensity={0.5} />
+      <hemisphereLight args={["#cfe0ea", "#8a7a5c", 0.55]} />
+      <directionalLight
+        position={[18, 24, -14]}
+        intensity={1.15}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-left={-40}
+        shadow-camera-right={40}
+        shadow-camera-top={40}
+        shadow-camera-bottom={-40}
+        shadow-bias={-0.0006}
+      />
+      <directionalLight position={[-16, 12, 18]} intensity={0.3} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6, -0.03, 4]} receiveShadow>
+        <planeGeometry args={[260, 260]} />
+        <meshStandardMaterial color="#6f8f5a" roughness={1} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6, -0.02, -9]} receiveShadow>
+        <planeGeometry args={[3, 16]} />
+        <meshStandardMaterial color="#c9c2b2" roughness={1} />
+      </mesh>
+    </>
+  );
+}
+
+/* La casa y el jugador. Devuelve null (el jugador) y mallas (la casa): nada de HTML. */
+function Contenido3D({ pintura, piso, wpc, entrada, onBloqueo }) {
+  return (
+    <>
+      <House pintura={pintura} piso={piso} wpc={wpc} />
+      <FirstPersonPlayer
+        posicionInicial={[6, 1.65, -3]}
+        entrada={entrada}
+        onBloqueo={onBloqueo}
+      />
+    </>
+  );
+}
+
+/* --- esto va FUERA del Canvas: HTML normal --- */
+
 function Selector({ pintura, setPintura, wpc, setWpc, piso, setPiso }) {
   return (
     <Panel>
@@ -109,8 +159,8 @@ function Selector({ pintura, setPintura, wpc, setWpc, piso, setPiso }) {
   );
 }
 
-/* Lee el registro compartido unas 6 veces por segundo. Suficiente para la etiqueta y para
-   el aviso de la puerta, y mucho más barato que un setState por frame. */
+/* Lee el registro compartido unas 6 veces por segundo: bastante para la etiqueta y el aviso
+   de la puerta, y mucho más barato que un setState por frame. */
 function Hud() {
   const [, forzar] = useState(0);
   useEffect(() => {
@@ -123,7 +173,10 @@ function Hud() {
     const onTap = () => abreCercana();
     window.addEventListener("keydown", onKey);
     window.addEventListener("pointerup", onTap);
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("pointerup", onTap); };
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerup", onTap);
+    };
   }, []);
 
   const puerta = FABRICK.cercana;
@@ -135,41 +188,15 @@ function Hud() {
   );
 }
 
-function Fabrica() {
-  const [pintura, setPintura] = useState(PINTURAS[0].color);
-  const [wpc, setWpc] = useState("roble");
-  const [piso, setPiso] = useState("pisoMadera");
-  const entrada = useRef({ x: 0, y: 0, correr: false });
-  const [dentro, setDentro] = useState(false);
-
-  useEffect(() => {
-    precargarFabrick([...WPC.map((w) => w.id), ...PISOS.map((p) => p.id)]);
-  }, []);
-
-  return (
-    <>
-      <House pintura={pintura} piso={piso} wpc={wpc} />
-      <FirstPersonPlayer
-        posicionInicial={[6, 1.65, -3]}
-        entrada={entrada}
-        onBloqueo={setDentro}
-      />
-      {dentro ? <Joystick onCambio={(v) => Object.assign(entrada.current, v)} /> : null}
-      <Hud />
-      <Selector
-        pintura={pintura} setPintura={setPintura}
-        wpc={wpc} setWpc={setWpc}
-        piso={piso} setPiso={setPiso}
-      />
-    </>
-  );
-}
-
 export default function Hall() {
-  // el ancho de verdad de la ventana; no hace falta detector de resize
   const [ancho, setAncho] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1280
   );
+  const [pintura, setPintura] = useState(PINTURAS[0].color);
+  const [wpc, setWpc] = useState("roble");
+  const [piso, setPiso] = useState("pisoMadera");
+  const [dentro, setDentro] = useState(false);
+  const entrada = useRef({ x: 0, y: 0, correr: false });
   const pequeno = ancho < 500;
 
   useEffect(() => {
@@ -178,21 +205,42 @@ export default function Hall() {
     return () => window.removeEventListener("resize", on);
   }, []);
 
+  useEffect(() => {
+    precargarFabrick([...WPC.map((w) => w.id), ...PISOS.map((p) => p.id)]);
+  }, []);
+
   return (
     <>
+      <AvisoErrores />
       <Canvas
         gl={{ antialias: true }}
-        camera={{ fov: pequeno ? 88 : 72, position: [6, 1.65, -3] }}
+        camera={{ fov: pequeno ? 88 : 72, position: [6, 1.65, -3], rotation: [0, Math.PI, 0] }}
       >
         <LoadingManager total={8} />
+        <Escena />
         <Suspense fallback={null}>
-          <Fabrica />
+          <Contenido3D
+            pintura={pintura}
+            piso={piso}
+            wpc={wpc}
+            entrada={entrada}
+            onBloqueo={setDentro}
+          />
         </Suspense>
       </Canvas>
 
-      <AvisoErrores />
-      <LogoFabrick ancho={pequeno ? 150 : 230} />
+      {/* Todo lo que sigue es HTML y va FUERA del Canvas */}
       <Mira />
+      {dentro ? (
+        <Joystick onCambio={(v) => Object.assign(entrada.current, v)} />
+      ) : null}
+      <Hud />
+      <Selector
+        pintura={pintura} setPintura={setPintura}
+        wpc={wpc} setWpc={setWpc}
+        piso={piso} setPiso={setPiso}
+      />
+      <LogoFabrick ancho={pequeno ? 150 : 230} />
       <Instruccion>
         <b>WASD</b> andar · <b>ratón</b> mirar · <b>Shift</b> correr
         <br />
