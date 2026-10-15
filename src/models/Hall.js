@@ -76,7 +76,8 @@ export default function Model() {
     pmremGenerator.compileEquirectangularShader();
 
     gl.toneMapping = ACESFilmicToneMapping;
-    gl.toneMappingExposure = 4;
+    // 4 dejaba la escena reventada en blanco; con el lightmap este valor es el que queda creible
+    gl.toneMappingExposure = 1.5;
     gl.outputEncoding = sRGBEncoding;
     gl.physicallyCorrectLights = true;
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
@@ -107,13 +108,13 @@ export default function Model() {
             console.log(o.name);
             // o.material.envMap = envMap;
             o.material.envMapIntensity = 0.2;
-            o.material.lightMapIntensity = 2;
+            o.material.lightMapIntensity = 1.35;
 
             if (o.name.includes("Interior_Chandeliers")) {
               o.material.envMap = envMap;
               o.material.envMapIntensity = 1;
               // o.material.lightMap = ChandeliersMap;
-              // o.material.lightMapIntensity = 2;
+              // o.material.lightMapIntensity = 1.35;
             } else if (o.name.includes("CoffeeTable")) {
               o.material.lightMap = CoffeeTableMap;
               if (o.material.name.includes("CoffeeTable")) {

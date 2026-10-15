@@ -34,7 +34,9 @@ const intersectsObjects = (items) => {
 
 function Controls({ settings }) {
   const PI_2 = Math.PI / 2;
-  const dragSpeed = 3;
+  // 3 era 0,17 grados por pixel: en el movil se notia muy lento. Con 6 va como en un juego.
+  const dragSpeed = 6;
+  const volandoAntes = React.useRef(false);
   const { yLevel } = settings.floorCircle;
 
   const { camera, gl, scene, raycaster, mouse } = useThree();
@@ -203,6 +205,22 @@ function Controls({ settings }) {
   }, [scene]);
 
   useFrame(() => {
+    // mientras la camara vuela a una vista cinematografica no se le mete la rotacion de este
+    // componente, o los dos se pelean y la vista se queda temblando
+    if (window.fabrickVolando) {
+      volandoAntes.current = true;
+      return;
+    }
+
+    // justo al aterrizar del vuelo se adopta la orientacion en la que ha quedado la camara,
+    // para que el siguiente arrastre no de un salto. Se hace una sola vez: si se hiciera en
+    // bucle, cada 120 ms pisaria el arrastre del usuario y la camara volveria atras.
+    if (volandoAntes.current) {
+      volandoAntes.current = false;
+      pitchObject.current.rotation.x = -camera.rotation.x;
+      yawObject.current.rotation.y = -camera.rotation.y;
+    }
+
     camera.updateProjectionMatrix();
 
     camera.rotation.x = lerp(

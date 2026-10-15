@@ -223,10 +223,16 @@ export default function House({ pintura, piso, wpc, planta = [0, 0, 0] }) {
 
   return (
     <Colliders planta={planta} claves={pintura + "|" + piso + "|" + wpc}>
-      {/* suelo de toda la planta */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[MEDIDAS.ancho / 2, 0.001, MEDIDAS.fondo / 2]} receiveShadow>
+      {/* suelo de toda la planta. El material va como prop directa, no con
+          <primitive attach="material">: eso obliga al reconciliador de R3F a acoplar un
+          objeto suelto y en la version 4 peta con «Cannot read __container». */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[MEDIDAS.ancho / 2, 0.001, MEDIDAS.fondo / 2]}
+        receiveShadow
+        material={matSuelo}
+      >
         <planeGeometry args={[MEDIDAS.ancho, MEDIDAS.fondo]} />
-        <primitive object={matSuelo} attach="material" />
       </mesh>
 
       {/* techo */}
@@ -267,9 +273,9 @@ export default function House({ pintura, piso, wpc, planta = [0, 0, 0] }) {
           key={e.id}
           position={[(e.caja[0] + e.caja[2]) / 2, 1.4, e.caja[1] + 0.011]}
           rotation={[0, 0, 0]}
+          material={matWpc}
         >
           <planeGeometry args={[e.caja[2] - e.caja[0] - 0.4, 1.1]} />
-          <primitive object={matWpc} attach="material" />
         </mesh>
       ))}
 

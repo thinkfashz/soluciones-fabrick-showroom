@@ -14,10 +14,11 @@ import {
 import { ThemeProvider } from "styled-components";
 import theme from "./utils/theme";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Logo from "./components/UI/Logo";
+import LogoFabrick from "./components/UI/LogoFabrick";
 
 const Room1 = React.lazy(() => import("./pages/room1"));
 const Hall = React.lazy(() => import("./pages/hall"));
+const Fabrica = React.lazy(() => import("./pages/fabrica"));
 
 function App() {
   return (
@@ -33,12 +34,13 @@ function App() {
             width: 100
           }}
         >
-          <Logo width={120} />
+          <LogoFabrick ancho={150} />
         </div>
         <Switch>
           <Suspense fallback={null}>
             <Route path='/room-1' render={(props) => <Room1 {...props} />} />
             <Route path='/hall' render={(props) => <Hall {...props} />} />
+            <Route path='/fabrica' render={(props) => <Fabrica {...props} />} />
             <Route exact path='/'>
               <Redirect to='/hall' />
             </Route>
